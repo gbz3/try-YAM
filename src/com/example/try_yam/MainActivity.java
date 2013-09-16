@@ -50,7 +50,7 @@ public class MainActivity extends MapActivity {
 			@Override
 			public void onClick(View arg0) {
 				Toast.makeText( MainActivity.this, "onClick", Toast.LENGTH_LONG ).show();
-				_mlo.runOnFirstFix( new Runnable() {
+				_mlo.runOnFirstFix( new Thread( new Runnable() {
 					@Override
 					public void run() {
 						if( _mv.getMapController() != null ) {
@@ -60,7 +60,7 @@ public class MainActivity extends MapActivity {
 						}
 						_mlo.disableMyLocation();
 					}
-				});
+				}, "Location" ) );
 			}
 		});
 
