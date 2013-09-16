@@ -5,6 +5,7 @@ import jp.co.yahoo.android.maps.MapActivity;
 import jp.co.yahoo.android.maps.MapView;
 import jp.co.yahoo.android.maps.MyLocationOverlay;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -14,7 +15,9 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 public class MainActivity extends MapActivity {
+	private static final String tag = MapActivity.class.getSimpleName();
 
+	// Key of InstanceState
 	private static final String LAT_OF_CENTER = "LATITUDE_OF_CENTER";	// 緯度
 	private static final String LON_OF_CENTER = "LONGITUDE_OF_CENTER";	// 軽度
 	private static final String ZOOM_LEVEL = "ZOOM_LEVEL";	// ズームレベル
@@ -51,7 +54,9 @@ public class MainActivity extends MapActivity {
 					@Override
 					public void run() {
 						if( _mv.getMapController() != null ) {
-							_mv.getMapController().animateTo( _mlo.getMyLocation() );
+							GeoPoint here = _mlo.getMyLocation();
+							Log.d( tag, "here:" + here.toString() );
+							_mv.getMapController().animateTo( here );
 						}
 						_mlo.disableMyLocation();
 					}
