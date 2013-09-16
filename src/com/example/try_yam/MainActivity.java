@@ -3,8 +3,15 @@ package com.example.try_yam;
 import jp.co.yahoo.android.maps.GeoPoint;
 import jp.co.yahoo.android.maps.MapActivity;
 import jp.co.yahoo.android.maps.MapView;
+import jp.co.yahoo.android.maps.MyLocationOverlay;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 public class MainActivity extends MapActivity {
 
@@ -12,17 +19,50 @@ public class MainActivity extends MapActivity {
 	private static final String LON_OF_CENTER = "LONGITUDE_OF_CENTER";	// 軽度
 	private static final String ZOOM_LEVEL = "ZOOM_LEVEL";	// ズームレベル
 
+	private static final int LPWC = ViewGroup.LayoutParams.WRAP_CONTENT;
+	private static final int LPMP = ViewGroup.LayoutParams.MATCH_PARENT;
+
 	private MapView _mv;
+	private MyLocationOverlay _mlo;
 
 	@Override
 	public void onCreate( Bundle savedInstanceState ) {
 		super.onCreate( savedInstanceState );
 
+		// MapView
 		_mv = new MapView( this, getString( R.string.appid ) );
 		_mv.setScalebar( true );
 
+		// My Location
+		_mlo = new MyLocationOverlay( this, _mv );
+
+		// Location Button
+		final Button btnLoc = new Button( getApplicationContext(), null, R.style.LocationButtonStyle );
+		btnLoc.setBackgroundResource( R.drawable.ic_launcher );
+		FrameLayout.LayoutParams lp4loc = new FrameLayout.LayoutParams( LPWC, LPWC );
+		lp4loc.gravity = Gravity.LEFT | Gravity.TOP;
+		lp4loc.leftMargin = 20;
+		lp4loc.topMargin = 20;
+		btnLoc.setOnClickListener( new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Toast.makeText( MainActivity.this, "onClick", Toast.LENGTH_LONG ).show();
+				_mlo.runOnFirstFix( new Runnable() {
+					@Override
+					public void run() {
+						if( _mv.getMapController() != null ) {
+							_mv.getMapController().animateTo( _mlo.getMyLocation() );
+						}
+						_mlo.disableMyLocation();
+					}
+				});
+			}
+		});
+
+		// View Setting
 		FrameLayout fl = new FrameLayout( this );
-		fl.addView( _mv );
+		fl.addView( _mv, new FrameLayout.LayoutParams( LPMP, LPMP ) );
+		fl.addView( btnLoc, lp4loc );
 		setContentView( fl );
 	}
 
