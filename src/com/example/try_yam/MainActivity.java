@@ -12,12 +12,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.FrameLayout;
-import android.widget.Toast;
+import android.widget.ToggleButton;
 
 public class MainActivity extends MapActivity implements MapTouchListener, RouteOverlayListener {
 	private static final String tag = MapActivity.class.getSimpleName();
@@ -26,11 +25,14 @@ public class MainActivity extends MapActivity implements MapTouchListener, Route
 	private static final String LAT_OF_CENTER = "LATITUDE_OF_CENTER";	// 緯度
 	private static final String LON_OF_CENTER = "LONGITUDE_OF_CENTER";	// 軽度
 	private static final String ZOOM_LEVEL = "ZOOM_LEVEL";	// ズームレベル
+	private static final String TOGGLE_LOCATION = "TOGGLE_LOCATION";	// ロケーションボタン選択状態
+	private static final String ENABLE_LOCATION = "ENABLE_LOCATION";	// ロケーション利用状態
 
 	private static final int LPWC = ViewGroup.LayoutParams.WRAP_CONTENT;
 	private static final int LPMP = ViewGroup.LayoutParams.MATCH_PARENT;
 
 	private MapView _mv;
+	private ToggleButton _tb;
 	private MyLocationOverlay _mlo;
 	private RouteOverlay _ro;
 
@@ -54,35 +56,39 @@ public class MainActivity extends MapActivity implements MapTouchListener, Route
 		_mlo = new MyLocationOverlay( this, _mv );
 
 		// Location Button
-		final Button btnLoc = new Button( getApplicationContext(), null, R.style.LocationButtonStyle );
-		btnLoc.setBackgroundResource( R.drawable.ic_launcher );
+		_tb = new ToggleButton( this );
+		_tb.setText( "Location OFF" );
+		_tb.setTextOn( "Location ON" );
+		_tb.setTextOff( "Location OFF" );
 		FrameLayout.LayoutParams lp4loc = new FrameLayout.LayoutParams( LPWC, LPWC );
 		lp4loc.gravity = Gravity.LEFT | Gravity.TOP;
 		lp4loc.leftMargin = 20;
 		lp4loc.topMargin = 20;
-		btnLoc.setOnClickListener( new OnClickListener() {
+		_tb.setOnCheckedChangeListener( new OnCheckedChangeListener() {
 			@Override
-			public void onClick(View arg0) {
-				Toast.makeText( MainActivity.this, "onClick", Toast.LENGTH_LONG ).show();
-				_mlo.enableMyLocation();
-				_mlo.runOnFirstFix( new Thread( new Runnable() {
-					@Override
-					public void run() {
-						if( _mv.getMapController() != null ) {
-							GeoPoint here = _mlo.getMyLocation();
-							Log.d( tag, "here:" + here.toString() );
-							_mv.getMapController().animateTo( here );
+			public void onCheckedChanged( CompoundButton btnView, boolean isChecked ) {
+				if( !isChecked ) {
+					if( _mlo.isMyLocationEnabled() ) _mlo.disableMyLocation();
+				} else {
+					if( !_mlo.isMyLocationEnabled() ) _mlo.enableMyLocation();
+					_mlo.runOnFirstFix( new Runnable() {
+						@Override
+						public void run() {
+							if( _mv.getMapController() != null ) {
+								GeoPoint here = _mlo.getMyLocation();
+								Log.d( tag, "here:" + here.toString() );
+								_mv.getMapController().animateTo( here );
+							}
 						}
-						// _mlo.disableMyLocation();
-					}
-				}, "Location" ) );
+					});
+				}
 			}
 		});
 
 		// View Setting
 		FrameLayout fl = new FrameLayout( this );
 		fl.addView( _mv, new FrameLayout.LayoutParams( LPMP, LPMP ) );
-		fl.addView( btnLoc, lp4loc );
+		fl.addView( _tb, lp4loc );
 		setContentView( fl );
 	}
 
@@ -99,14 +105,27 @@ public class MainActivity extends MapActivity implements MapTouchListener, Route
 			outState.putInt( LAT_OF_CENTER, _mv.getMapCenter().getLatitudeE6() );
 			outState.putInt( LON_OF_CENTER, _mv.getMapCenter().getLongitudeE6() );
 		}
+		if( _mlo != null ) {
+			outState.putBoolean( TOGGLE_LOCATION, _tb.isChecked() );
+			outState.putBoolean( ENABLE_LOCATION, _mlo.isMyLocationEnabled() );
+		}
 	}
 
 	@Override
 	protected void onRestoreInstanceState( Bundle inState ) {
-		if( _mv != null && inState.containsKey( LAT_OF_CENTER ) && inState.containsKey( LON_OF_CENTER ) ) {
-			_mv.getMapController().setZoom( inState.getInt( ZOOM_LEVEL ) );
+		if( _mv != null ) {
+			_mv.getMapController().setZoom( inState.getInt( ZOOM_LEVEL, 4 ) );
 			_mv.getMapController().setCenter(
-					new GeoPoint( inState.getInt( LAT_OF_CENTER ), inState.getInt( LON_OF_CENTER ) ) );
+					new GeoPoint( inState.getInt( LAT_OF_CENTER, _mv.getMapCenter().getLatitudeE6() ),
+							inState.getInt( LON_OF_CENTER, _mv.getMapCenter().getLongitudeE6() ) ) );
+		}
+		if( _mlo != null ) {
+			_tb.setChecked( inState.getBoolean( TOGGLE_LOCATION, false ) );
+			if( inState.getBoolean( ENABLE_LOCATION, false ) ) {
+				_mlo.enableMyLocation();
+			} else {
+				_mlo.disableMyLocation();
+			}
 		}
 	}
 
@@ -141,7 +160,10 @@ public class MainActivity extends MapActivity implements MapTouchListener, Route
 	}
 
 	@Override
-	public boolean finishRouteSearch(RouteOverlay arg0) {
+	public boolean finishRouteSearch( RouteOverlay ro ) {
+		if( _mv.getMapController() != null ) {
+			_mv.getMapController().animateTo( ro.getStartPos() );
+		}
 		return false;
 	}
 
