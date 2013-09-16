@@ -3,10 +3,15 @@ package com.example.try_yam;
 import jp.co.yahoo.android.maps.GeoPoint;
 import jp.co.yahoo.android.maps.MapActivity;
 import jp.co.yahoo.android.maps.MapView;
+import jp.co.yahoo.android.maps.MapView.MapTouchListener;
 import jp.co.yahoo.android.maps.MyLocationOverlay;
+import jp.co.yahoo.android.maps.PinOverlay;
+import jp.co.yahoo.android.maps.routing.RouteOverlay;
+import jp.co.yahoo.android.maps.routing.RouteOverlay.RouteOverlayListener;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -14,7 +19,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-public class MainActivity extends MapActivity {
+public class MainActivity extends MapActivity implements MapTouchListener, RouteOverlayListener {
 	private static final String tag = MapActivity.class.getSimpleName();
 
 	// Key of InstanceState
@@ -27,6 +32,7 @@ public class MainActivity extends MapActivity {
 
 	private MapView _mv;
 	private MyLocationOverlay _mlo;
+	private RouteOverlay _ro;
 
 	@Override
 	public void onCreate( Bundle savedInstanceState ) {
@@ -35,6 +41,14 @@ public class MainActivity extends MapActivity {
 		// MapView
 		_mv = new MapView( this, getString( R.string.appid ) );
 		_mv.setScalebar( true );
+		_mv.setLongPress( true );
+		_mv.setMapTouchListener( this );
+
+		_ro = new RouteOverlay( this, getString( R.string.appid ) );
+		_ro.setStartTitle( getString( R.string.start_pin_title ) );
+		_ro.setGoalTitle( getString( R.string.goal_pin_title ) );
+		_ro.setRouteOverlayListener( this );
+		_mv.getOverlays().add( _ro );
 
 		// My Location
 		_mlo = new MyLocationOverlay( this, _mv );
@@ -50,6 +64,7 @@ public class MainActivity extends MapActivity {
 			@Override
 			public void onClick(View arg0) {
 				Toast.makeText( MainActivity.this, "onClick", Toast.LENGTH_LONG ).show();
+				_mlo.enableMyLocation();
 				_mlo.runOnFirstFix( new Thread( new Runnable() {
 					@Override
 					public void run() {
@@ -58,7 +73,7 @@ public class MainActivity extends MapActivity {
 							Log.d( tag, "here:" + here.toString() );
 							_mv.getMapController().animateTo( here );
 						}
-						_mlo.disableMyLocation();
+						// _mlo.disableMyLocation();
 					}
 				}, "Location" ) );
 			}
@@ -93,6 +108,41 @@ public class MainActivity extends MapActivity {
 			_mv.getMapController().setCenter(
 					new GeoPoint( inState.getInt( LAT_OF_CENTER ), inState.getInt( LON_OF_CENTER ) ) );
 		}
+	}
+
+	@Override
+	public boolean onLongPress( MapView mv, Object icon, PinOverlay pin, GeoPoint goal ) {
+		Log.d( tag, "start:" + mv.getMapCenter().toString() + " end:" + goal.toString() );
+		_ro.setRoutePos( ( _mlo.isMyLocationEnabled()? _mlo.getMyLocation(): mv.getMapCenter() ),
+				goal, RouteOverlay.TRAFFIC_WALK );
+		_ro.search();
+		return false;
+	}
+
+	@Override
+	public boolean onPinchIn(MapView arg0) {
+		return false;
+	}
+
+	@Override
+	public boolean onPinchOut(MapView arg0) {
+		return false;
+	}
+
+	@Override
+	public boolean onTouch(MapView arg0, MotionEvent arg1) {
+		return false;
+	}
+
+	@Override
+	public boolean errorRouteSearch(RouteOverlay arg0, int arg1) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean finishRouteSearch(RouteOverlay arg0) {
+		return false;
 	}
 
 }

@@ -1,5 +1,7 @@
 <resources>
 
     <string name="app_name">YAM</string>
-
+    <string name="start_pin_title">スタート</string>
+    <string name="goal_pin_title">ゴール</string>
+    
 </resources>
