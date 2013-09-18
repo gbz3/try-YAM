@@ -12,7 +12,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.FrameLayout;
@@ -85,10 +88,25 @@ public class MainActivity extends MapActivity implements MapTouchListener, Route
 			}
 		});
 
+		// Menu Button
+		Button btnMenu = new Button( this );
+		btnMenu.setBackgroundResource( R.drawable.ic_launcher );
+		btnMenu.setOnClickListener( new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				MainActivity.this.getFragmentManager().beginTransaction().add( android.R.id.content, new MyListFragment() ).commit();
+			}
+		});
+		FrameLayout.LayoutParams lp4menu = new FrameLayout.LayoutParams( LPWC, LPWC );
+		lp4menu.gravity = Gravity.LEFT | Gravity.BOTTOM;
+		lp4menu.leftMargin = 20;
+		lp4menu.bottomMargin = 100;
+
 		// View Setting
 		FrameLayout fl = new FrameLayout( this );
 		fl.addView( _mv, new FrameLayout.LayoutParams( LPMP, LPMP ) );
 		fl.addView( _tb, lp4loc );
+		fl.addView( btnMenu, lp4menu );
 		setContentView( fl );
 	}
 
